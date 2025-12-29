@@ -11,7 +11,7 @@ import SwiftUI
 struct yeahbuddyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SetupView()
         }
     }
 }
