@@ -51,6 +51,7 @@ class WorkoutSessionViewModel: ObservableObject {
     func start() {
         resetState()
         isWorkoutActive = true
+        workoutCompleted = false
         // Event-based audio
         speechService.playEvent(.start)
         
@@ -259,6 +260,7 @@ class WorkoutSessionViewModel: ObservableObject {
         
         // Resume Logic
         self.isWorkoutActive = true
+        self.workoutCompleted = false
         
         // If we were resting, resume the timer
         if isResting {

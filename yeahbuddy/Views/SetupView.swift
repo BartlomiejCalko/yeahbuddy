@@ -121,6 +121,11 @@ struct SetupView: View {
             .onAppear {
                 viewModel.checkForSavedSession()
             }
+            .onChange(of: viewModel.workoutCompleted) { completed in
+                if completed {
+                    navigateToWorkout = false
+                }
+            }
         }
     }
     
