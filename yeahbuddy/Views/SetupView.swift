@@ -34,9 +34,9 @@ struct SetupView: View {
                     
                     // Configuration Card
                     VStack(spacing: 24) {
-                        configRow(label: "Target Reps", value: $viewModel.targetReps, range: 1...50, icon: "repeat")
+                        configRow(label: "Target Reps", value: $viewModel.targetReps, range: 1...30, icon: "repeat")
                         Divider().background(Color.white.opacity(0.3))
-                        configRow(label: "Target Sets", value: $viewModel.targetSets, range: 1...20, icon: "square.stack.3d.up.fill")
+                        configRow(label: "Target Sets", value: $viewModel.targetSets, range: 1...10, icon: "square.stack.3d.up.fill")
                         Divider().background(Color.white.opacity(0.3))
                         configRow(label: "Rest Time", value: $viewModel.restTime, range: 10...180, step: 10, icon: "timer")
                     }
