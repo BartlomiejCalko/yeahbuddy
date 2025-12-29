@@ -46,29 +46,70 @@ struct SetupView: View {
                     
                     Spacer()
                     
-                    // Start Button
-                    Button(action: {
-                        viewModel.start()
-                        navigateToWorkout = true
-                    }) {
-                        HStack {
-                            Text("START WORKOUT")
-                                .font(.system(size: 20, weight: .bold, design: .rounded))
-                            Image(systemName: "arrow.right")
-                                .font(.headline)
+                    // Buttons
+                    VStack(spacing: 16) {
+                        if viewModel.hasSavedSession {
+                            // Resume Button
+                            Button(action: {
+                                viewModel.restoreSession()
+                                navigateToWorkout = true
+                            }) {
+                                HStack {
+                                    Text("RESUME SESSION")
+                                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.headline)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(colors: [YBColors.neonGreen, Color.blue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .cornerRadius(30)
+                                .shadow(color: YBColors.neonGreen.opacity(0.5), radius: 10, x: 0, y: 5)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 30)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            
+                            // Start New Button (Secondary Style)
+                            Button(action: {
+                                viewModel.start()
+                                navigateToWorkout = true
+                            }) {
+                                Text("Start New Workout")
+                                    .font(.headline)
+                                    .foregroundColor(YBColors.textSecondary)
+                                    .padding()
+                            }
+                        } else {
+                            // Standard Start Button
+                            Button(action: {
+                                viewModel.start()
+                                navigateToWorkout = true
+                            }) {
+                                HStack {
+                                    Text("START WORKOUT")
+                                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    Image(systemName: "arrow.right")
+                                        .font(.headline)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(colors: [YBColors.neonPink, YBColors.backgroundStart], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .cornerRadius(30)
+                                .shadow(color: YBColors.neonPink.opacity(0.5), radius: 10, x: 0, y: 5)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 30)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                            }
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(
-                            LinearGradient(colors: [YBColors.neonPink, YBColors.backgroundStart], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                        .cornerRadius(30)
-                        .shadow(color: YBColors.neonPink.opacity(0.5), radius: 10, x: 0, y: 5)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 30)
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 40)
@@ -76,6 +117,9 @@ struct SetupView: View {
             }
             .navigationDestination(isPresented: $navigateToWorkout) {
                 WorkoutView(viewModel: viewModel)
+            }
+            .onAppear {
+                viewModel.checkForSavedSession()
             }
         }
     }

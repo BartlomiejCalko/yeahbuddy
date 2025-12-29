@@ -67,7 +67,8 @@ class WorkoutSessionViewModel: ObservableObject {
         isWorkoutActive = false
         stopTimer()
         audioInputService.stopMonitoring()
-        speechService.playEvent(.finish) // Or stop event, but user usually stops at finish
+        saveSession() // Save progress on stop
+        speechService.playEvent(.finish)
     }
     
     func completeRep() {
@@ -114,11 +115,13 @@ class WorkoutSessionViewModel: ObservableObject {
         }
     }
     
-    private func startRest() {
-        isResting = true
-        timeRemaining = restTime
-        audioInputService.stopMonitoring()
-        speechService.playEvent(.rest(seconds: restTime))
+    private func startRest(resume: Bool = false) {
+        if !resume {
+            isResting = true
+            timeRemaining = restTime
+            audioInputService.stopMonitoring()
+            speechService.playEvent(.rest(seconds: restTime))
+        }
         
         timer = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
@@ -148,6 +151,7 @@ class WorkoutSessionViewModel: ObservableObject {
     private func finishWorkout() {
         isWorkoutActive = false
         audioInputService.stopMonitoring()
+        clearSession()
         speechService.playEvent(.finish)
     }
     
@@ -166,4 +170,80 @@ class WorkoutSessionViewModel: ObservableObject {
         currentRep = 0
         repsRemaining = targetReps
     }
+    
+    // MARK: - Persistence
+    @Published var hasSavedSession: Bool = false
+    private let storageKey = "savedWorkoutState"
+    
+    func checkForSavedSession() {
+        hasSavedSession = UserDefaults.standard.data(forKey: storageKey) != nil
+    }
+    
+    func saveSession() {
+        let state = WorkoutSessionState(
+            targetReps: targetReps,
+            targetSets: targetSets,
+            restTime: restTime,
+            currentSet: currentSet,
+            currentRep: currentRep,
+            repsRemaining: repsRemaining,
+            isResting: isResting,
+            timeRemaining: timeRemaining
+        )
+        
+        if let data = try? JSONEncoder().encode(state) {
+            UserDefaults.standard.set(data, forKey: storageKey)
+            checkForSavedSession()
+            print("Session Saved")
+        }
+    }
+    
+    func restoreSession() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let state = try? JSONDecoder().decode(WorkoutSessionState.self, from: data) else { return }
+        
+        // Restore Config
+        self.targetReps = state.targetReps
+        self.targetSets = state.targetSets
+        self.restTime = state.restTime
+        
+        // Restore Progress
+        self.currentSet = state.currentSet
+        self.currentRep = state.currentRep
+        self.repsRemaining = state.repsRemaining
+        self.isResting = state.isResting
+        self.timeRemaining = state.timeRemaining
+        
+        // Resume Logic
+        self.isWorkoutActive = true
+        
+        // If we were resting, resume the timer
+        if isResting {
+            startRest(resume: true)
+        } else {
+             // If we were active, just start monitoring again
+             // Wait briefly for UI transition
+             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                 self?.audioInputService.startMonitoring()
+             }
+        }
+        
+        speechService.playEvent(.start) // "Yeah Buddy" to confirm resume
+    }
+    
+    func clearSession() {
+        UserDefaults.standard.removeObject(forKey: storageKey)
+        checkForSavedSession()
+    }
+}
+
+struct WorkoutSessionState: Codable {
+    let targetReps: Int
+    let targetSets: Int
+    let restTime: Int
+    let currentSet: Int
+    let currentRep: Int
+    let repsRemaining: Int
+    let isResting: Bool
+    let timeRemaining: Int
 }
