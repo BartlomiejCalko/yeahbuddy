@@ -24,6 +24,7 @@ class WorkoutSessionViewModel: ObservableObject {
     @Published var isResting: Bool = false
     @Published var timeRemaining: Int = 0
     @Published var isWorkoutActive: Bool = false
+    @Published var workoutCompleted: Bool = false
     
     // Dependencies
     private let speechService = SpeechService()
@@ -68,7 +69,11 @@ class WorkoutSessionViewModel: ObservableObject {
         stopTimer()
         audioInputService.stopMonitoring()
         saveSession() // Save progress on stop
-        speechService.playEvent(.finish)
+        
+        // Delay audio for smoother UX
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.speechService.playEvent(.stopByUser)
+        }
     }
     
     func completeRep() {
@@ -89,10 +94,25 @@ class WorkoutSessionViewModel: ObservableObject {
         repsRemaining = max(0, targetReps - currentRep)
         
         // Use event for Rep counting
-        // Note: SpeechService handles logic (3rd rep = lightweight)
+        // Note: SpeechService handles specific file playback for numbers.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self = self, self.isWorkoutActive else { return }
             self.speechService.playEvent(.rep(count: self.currentRep))
+            
+            // Exclusive Priority Logic for Secondary Sounds (Motivation / Warnings)
+            // Delay slightly to let the number finish.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if self.repsRemaining == 1 {
+                    // "before-last-one.mp3" (Overrides Lightweight)
+                    self.speechService.playEvent(.beforeLastRep)
+                } else if self.repsRemaining == 2 {
+                    // "two_more_reps.mp3" (Overrides Lightweight if it was a multiple of 3)
+                     self.speechService.playEvent(.twoMoreReps)
+                } else if self.currentRep % 3 == 0 {
+                    // Standard "lightweight.mp3"
+                     self.speechService.playEvent(.lightweight)
+                }
+            }
         }
         
         // Logic for End of Set
@@ -111,6 +131,8 @@ class WorkoutSessionViewModel: ObservableObject {
         if currentSet >= targetSets {
             finishWorkout()
         } else {
+            // Trigger "set_complete" + "rest" sequence
+            speechService.playEvent(.setComplete(succeeded: true))
             startRest()
         }
     }
@@ -120,7 +142,7 @@ class WorkoutSessionViewModel: ObservableObject {
             isResting = true
             timeRemaining = restTime
             audioInputService.stopMonitoring()
-            speechService.playEvent(.rest(seconds: restTime))
+            // Removed direct .rest call here, as .setComplete handles the sequence
         }
         
         timer = Timer.publish(every: 1.0, on: .main, in: .common)
@@ -133,6 +155,11 @@ class WorkoutSessionViewModel: ObservableObject {
     private func tickRest() {
         if timeRemaining > 0 {
             timeRemaining -= 1
+            
+            // "gdy zostanie ostatnie 10 sekund odtworz plik be_ready_next_set.mp3"
+            if timeRemaining == 10 {
+                speechService.playEvent(.tenSecondsLeftInRest)
+            }
         } else {
             endRest()
         }
@@ -144,15 +171,31 @@ class WorkoutSessionViewModel: ObservableObject {
         currentSet += 1
         resetRepsForSet()
         audioInputService.startMonitoring()
-        // Announce new set
-        speechService.playEvent(.start) // Reuse start sound for set start, or could be separate
+        
+        // "po zakonczeniu rest count- odtworz z delay 0.3 plik next_set.mp3 lub last_set.mp3"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self = self, self.isWorkoutActive else { return }
+            
+            if self.currentSet == self.targetSets {
+                 self.speechService.playEvent(.lastSet)
+            } else {
+                 self.speechService.playEvent(.nextSet)
+            }
+        }
     }
     
     private func finishWorkout() {
         isWorkoutActive = false
         audioInputService.stopMonitoring()
         clearSession()
-        speechService.playEvent(.finish)
+        
+        // Play finish sound and get duration
+        let duration = speechService.playEvent(.finish)
+        
+        // Signal view to dismiss after audio finishes + buffer
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.5) { [weak self] in
+             self?.workoutCompleted = true
+        }
     }
     
     private func stopTimer() {
@@ -228,7 +271,10 @@ class WorkoutSessionViewModel: ObservableObject {
              }
         }
         
-        speechService.playEvent(.start) // "Yeah Buddy" to confirm resume
+        // Delay audio for smoother UX
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.speechService.playEvent(.resume) // "resume_workout.mp3"
+        }
     }
     
     func clearSession() {

@@ -173,6 +173,11 @@ struct WorkoutView: View {
         .navigationBarHidden(true)
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+        .onChange(of: viewModel.workoutCompleted) { completed in
+            if completed {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
     }
     
     // Helper Stat Card
