@@ -33,6 +33,10 @@ class WorkoutSessionViewModel: ObservableObject {
     private var timer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     
+    // Debounce
+    private var lastRepTime: Date = Date.distantPast
+    private let minRepDuration: TimeInterval = 1.3 // Minimum seconds between reps
+    
     init() {
         // Subscribe to audio events
         audioInputService.soundDetected
@@ -69,22 +73,36 @@ class WorkoutSessionViewModel: ObservableObject {
     func completeRep() {
         guard isWorkoutActive, !isResting else { return }
         
+        // Prevent over-counting (Premium Feel: Strict adherence to plan)
+        guard repsRemaining > 0 else { return }
+        
+        // DEBOUNCE: Check if enough time has passed since last rep
+        let now = Date()
+        guard now.timeIntervalSince(lastRepTime) > minRepDuration else {
+            print("Rep Ignored (Debounce active)")
+            return
+        }
+        
+        lastRepTime = now
         currentRep += 1
         repsRemaining = max(0, targetReps - currentRep)
         
-        // DELAY: Wait 0.6s so we don't speak over the user's grunt.
+        // Use event for Rep counting
+        // Note: SpeechService handles logic (3rd rep = lightweight)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self = self, self.isWorkoutActive else { return }
-            // Use event for Rep counting (handles custom sounds internally)
             self.speechService.playEvent(.rep(count: self.currentRep))
         }
         
-        // Motivation engine logic is largely replaced by custom sounds,
-        // but we can keep it for specific milestones if we wanted to mix them.
-        // For now, let's trust the playEvent(.rep) logic which handles "Lightweight" quotes randomly.
-        
+        // Logic for End of Set
         if repsRemaining == 0 {
-            finishSet()
+            // STOP MONITORING IMMEDIATELY to prevent phantom "11th" rep
+            audioInputService.stopMonitoring()
+            
+            // DELAY: Wait for audio to finish before transition
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+                self?.finishSet()
+            }
         }
     }
     

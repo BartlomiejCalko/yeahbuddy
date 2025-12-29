@@ -43,19 +43,29 @@ class SpeechService {
     
     // MARK: - Event Handling
     
+    // MARK: - Event Handling
+    
     func playEvent(_ event: WorkoutEvent) {
+        // Stop any previous speech or sound to prevent overlap
+        stopPlayback()
+        
         switch event {
         case .start:
             if playSoundFile(named: "start") { return }
             speak("Let's do this! Yeah Buddy!", style: .hype)
             
         case .rep(let count):
-            // Every 5 reps or randomly, try to play a "lightweight" clip if exists
-            if count % 5 == 0 && Int.random(in: 0...2) == 0 {
-                if playSoundFile(named: "lightweight") { return }
-                speak("Light weight baby!", style: .hype)
-            } else {
-                speak("\(count)", style: .hype) // Just count usually
+            // Always speak the count first
+            speak("\(count)", style: .hype)
+            
+            // Every 3rd rep (3, 6, 9...), play "Lightweight" AFTER the count.
+            if count % 3 == 0 {
+                // Delay to let "Three" finish (approx 0.5s)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    // We check if we are still safe to play (rudimentary check, 
+                    // relying on the next playEvent to kill this if it's too late)
+                    _ = self?.playSoundFile(named: "lightweight")
+                }
             }
             
         case .rest(let seconds):
@@ -72,6 +82,15 @@ class SpeechService {
         case .lightweight:
              if playSoundFile(named: "lightweight") { return }
              speak("Light weight baby!", style: .hype)
+        }
+    }
+    
+    private func stopPlayback() {
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
+        if let player = audioPlayer, player.isPlaying {
+            player.stop()
         }
     }
     

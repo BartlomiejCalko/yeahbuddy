@@ -12,71 +12,118 @@ struct SetupView: View {
     @State private var navigateToWorkout = false
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 30) {
-                Text("Yeah Buddy")
-                    .font(.largeTitle)
-                    .fontWeight(.heavy)
+        NavigationStack {
+            ZStack {
+                // Background
+                YBGradients.mainBackground
+                    .ignoresSafeArea()
+                
+                // Content
+                VStack(spacing: 30) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("YEAH BUDDY")
+                            .ybTitle()
+                        Text("Lightweight Baby!")
+                            .font(.headline)
+                            .foregroundColor(YBColors.textSecondary)
+                    }
                     .padding(.top, 40)
-                
-                Spacer()
-                
-                VStack(spacing: 20) {
-                    configRow(label: "Reps", value: $viewModel.targetReps, range: 1...50)
-                    configRow(label: "Sets", value: $viewModel.targetSets, range: 1...20)
-                    configRow(label: "Rest (s)", value: $viewModel.restTime, range: 10...180, step: 10)
-                }
-                .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
-                .padding(.horizontal)
-                
-                Spacer()
-                
-                NavigationLink(destination: WorkoutView(viewModel: viewModel), isActive: $navigateToWorkout) {
-                    EmptyView()
-                }
-                
-                Button(action: {
-                    viewModel.start()
-                    navigateToWorkout = true
-                }) {
-                    Text("START")
-                        .font(.headline)
-                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    // Configuration Card
+                    VStack(spacing: 24) {
+                        configRow(label: "Target Reps", value: $viewModel.targetReps, range: 1...50, icon: "repeat")
+                        Divider().background(Color.white.opacity(0.3))
+                        configRow(label: "Target Sets", value: $viewModel.targetSets, range: 1...20, icon: "square.stack.3d.up.fill")
+                        Divider().background(Color.white.opacity(0.3))
+                        configRow(label: "Rest Time", value: $viewModel.restTime, range: 10...180, step: 10, icon: "timer")
+                    }
+                    .padding(24)
+                    .glassCard()
+                    .padding(.horizontal)
+                    
+                    Spacer()
+                    
+                    // Start Button
+                    Button(action: {
+                        viewModel.start()
+                        navigateToWorkout = true
+                    }) {
+                        HStack {
+                            Text("START WORKOUT")
+                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                            Image(systemName: "arrow.right")
+                                .font(.headline)
+                        }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                        .padding(.vertical, 18)
+                        .background(
+                            LinearGradient(colors: [YBColors.neonPink, YBColors.backgroundStart], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .cornerRadius(30)
+                        .shadow(color: YBColors.neonPink.opacity(0.5), radius: 10, x: 0, y: 5)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 40)
             }
-            .navigationBarHidden(true)
-            .background(Color(UIColor.systemBackground))
+            .navigationDestination(isPresented: $navigateToWorkout) {
+                WorkoutView(viewModel: viewModel)
+            }
         }
-        .preferredColorScheme(.dark) // Requirement: Dark Mode must look correct (forcing dark or respecting system, prompt says "supports Dark Mode correctly", usually implies respecting system but looking good. "Do NOT force light or dark mode yet" -> Okay I should remove .preferredColorScheme(.dark) if the prompt said DO NOT force.
-        // Prompt Check: "4. Use dynamic system colors only... 5. Do NOT force light or dark mode yet"
-        // Correcting: I will remove the modifier to respect system settings.
     }
     
-    // Helper for configuration rows
-    private func configRow(label: String, value: Binding<Int>, range: ClosedRange<Int>, step: Int = 1) -> some View {
+    // Custom Glass Config Row
+    private func configRow(label: String, value: Binding<Int>, range: ClosedRange<Int>, step: Int = 1, icon: String) -> some View {
         HStack {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(YBColors.neonGreen)
+                .frame(width: 30)
+            
             Text(label)
                 .font(.headline)
+                .foregroundColor(YBColors.textPrimary)
+            
             Spacer()
-            Stepper(value: value, in: range, step: step) {
+            
+            HStack(spacing: 16) {
+                Button(action: {
+                    if value.wrappedValue > range.lowerBound {
+                        value.wrappedValue -= step
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                }) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(YBColors.textSecondary)
+                }
+                
                 Text("\(value.wrappedValue)")
-                    .font(.body)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(YBColors.textPrimary)
+                    .frame(minWidth: 40)
                     .monospacedDigit()
+                
+                Button(action: {
+                    if value.wrappedValue < range.upperBound {
+                        value.wrappedValue += step
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(YBColors.textSecondary)
+                }
             }
-            .labelsHidden()
-            Text("\(value.wrappedValue)")
-                .font(.title3)
-                .fontWeight(.bold)
-                .frame(minWidth: 40)
         }
     }
 }

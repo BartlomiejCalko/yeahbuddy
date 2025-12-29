@@ -10,18 +10,85 @@ import Foundation
 import Foundation
 import AVFoundation
 import Combine
+import SwiftUI
+
+enum AudioPreset: String, CaseIterable {
+    case home = "Home"
+    case gym = "Gym"
+    case loud = "Loud"
+    
+    var icon: String {
+        switch self {
+        case .home: return "house.fill"
+        case .gym: return "dumbbell.fill"
+        case .loud: return "speaker.wave.3.fill"
+        }
+    }
+    
+    var baseThreshold: Float {
+        switch self {
+        case .home: return -30.0 // Adjusted: More sensitive
+        case .gym: return -25.0  // Adjusted based on user feedback
+        case .loud: return -15.0  // Adjusted
+        }
+    }
+    
+    var baseGain: Float {
+        switch self {
+        case .home: return 10.0   // Higher boost
+        case .gym: return 5.0    // Mild boost
+        case .loud: return 0.0
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .home: return "Best for quiet rooms. Detects breathing & soft grunts."
+        case .gym: return "Best for standard gym noise. Filters background music."
+        case .loud: return "Best for noisy areas. You must be close to the phone."
+        }
+    }
+}
 
 class AudioInputService: ObservableObject {
     private var audioEngine: AVAudioEngine?
     private var inputNode: AVAudioInputNode?
     
-    // Configurable Settings
-    @Published var threshold: Float = -10.0 // dB (Safer default to avoid phantom reps)
-    private let cooldown: TimeInterval = 0.35 // 350ms
+    // Configurable Settings (Preset Driven)
+    @Published var activePreset: AudioPreset = .gym {
+        didSet { updateSettings() }
+    }
+    
+    // Fine Tune: -5 (Easier/More Sensitive) to +5 (Harder/Less Sensitive)
+    // Actually simplicity: Let's match slider direction.
+    // Slide Left (Easier) -> Lower Threshold. Slide Right (Harder) -> Higher Threshold.
+    // Let's standardize: 0 is default. Range -5 to +5.
+    @Published var sensitivityAdjustment: Float = 0.0 {
+        didSet { updateSettings() }
+    }
+    
+    // Internal Effective Values
+    @Published private(set) var threshold: Float = -15.0
+    @Published private(set) var inputGain: Float = 0.0 
+    
+    private func updateSettings() {
+        self.inputGain = activePreset.baseGain
+        // Adjustment: Negative adjustment = Lower Threshold (More Sensitive).
+        // e.g. Base -15. Adj -5 => -20 (More Sensitive).
+        self.threshold = activePreset.baseThreshold + sensitivityAdjustment
+    }
+    
+    // Hysteresis Settings
+    // The level must drop below checkThreshold - resetHysteresis to "Reset" the trigger.
+    private let resetHysteresis: Float = 10.0 
     
     // State
     @Published var currentDecibels: Float = -160.0
-    private var lastDetectionTime: Date = Date.distantPast
+    
+    // "Is the user currently making a sound that has already triggered a rep?"
+    // If true, we are waiting for silence (dB < threshold - hysteresis).
+    // If false, we are waiting for a loud sound (dB > threshold).
+    private var isTriggerActive: Bool = false
     
     // Outputs
     let soundDetected = PassthroughSubject<Void, Never>()
@@ -37,10 +104,9 @@ class AudioInputService: ObservableObject {
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            // Use .videoRecording mode, which implies "Loud Speaker + Mic" usage (Camcorder style).
-            // .measurement often disables gain, leading to low volume.
-            try session.setCategory(.playAndRecord, mode: .videoRecording, options: [.duckOthers, .allowBluetooth, .defaultToSpeaker])
-            try session.overrideOutputAudioPort(.speaker)
+            // Using .default mode is better for standard mic input and noise suppression.
+            // Removing overrideOutputAudioPort(.speaker) allows Headphones to work automatically.
+            try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .allowBluetooth, .defaultToSpeaker])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Audio Session Setup Error: \(error)")
@@ -139,16 +205,17 @@ class AudioInputService: ObservableObject {
     }
     
     func startMonitoring() {
-        if audioEngine == nil {
-            setupEngine()
-        }
-        
-        do {
-            if let engine = audioEngine, !engine.isRunning {
-                try engine.start()
-            }
-        } catch {
-            print("Audio Engine Start Error: \(error)")
+        if audioEngine == nil || audioEngine?.isRunning == false {
+             // Re-setup if needed
+             if audioEngine == nil { setupEngine() }
+             
+             do {
+                 try audioEngine?.start()
+                 // Reset trigger state on start
+                 isTriggerActive = false 
+             } catch {
+                 print("Audio Engine Start Error: \(error)")
+             }
         }
     }
     
@@ -165,25 +232,39 @@ class AudioInputService: ObservableObject {
         let rms = sqrt(channelDataValueArray.map { $0 * $0 }.reduce(0, +) / Float(buffer.frameLength))
         
         // Convert to dB
-        let avgPower = 20 * log10(rms)
+        let rawDb = 20 * log10(rms)
         
         // Publish updates on main thread
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Clamp roughly to -160 (silence) to 0 (max)
-            self.currentDecibels = avgPower.isFinite ? avgPower : -160.0
+            // Apply software gain
+            let adjustedDb = rawDb + self.inputGain
+            
+            // Clamp
+            self.currentDecibels = adjustedDb.isFinite ? adjustedDb : -160.0
             
             self.checkForSound(decibels: self.currentDecibels)
         }
     }
     
     private func checkForSound(decibels: Float) {
-        let now = Date()
-        if decibels > threshold && now.timeIntervalSince(lastDetectionTime) > cooldown {
-            // Detected!
-            lastDetectionTime = now
-            soundDetected.send()
+        if isTriggerActive {
+            // We are waiting for the sound to finish (drop below reset threshold).
+            // This PREVENTS machine-gun firing while the user is still screaming "YEAAAH".
+            let resetThreshold = threshold - resetHysteresis
+            if decibels < resetThreshold {
+                isTriggerActive = false // Reset. Ready for next rep.
+                print("Audio Trigger Reset (Level dropped below \(resetThreshold))")
+            }
+        } else {
+            // We are listening for a NEW sound.
+            if decibels > threshold {
+                 // FIRE!
+                 isTriggerActive = true
+                 soundDetected.send()
+                 print("Audio Trigger FIRED (Level > \(threshold))")
+            }
         }
     }
 }
