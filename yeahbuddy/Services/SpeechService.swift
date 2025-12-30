@@ -62,7 +62,7 @@ class SpeechService {
         case .start:
             let dur = playSoundFile(named: "start")
             if dur > 0 { return dur }
-            speak("Let's do this! Yeah Buddy!", style: .hype)
+            speak("Let's do this! yeah buddy!", style: .hype)
             return 2.0
             
         case .resume:

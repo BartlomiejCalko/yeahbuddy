@@ -9,9 +9,15 @@ import SwiftUI
 
 @main
 struct yeahbuddyApp: App {
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    
     var body: some Scene {
         WindowGroup {
-            SetupView()
+            if hasCompletedOnboarding {
+                SetupView()
+            } else {
+                OnboardingView()
+            }
         }
     }
 }
