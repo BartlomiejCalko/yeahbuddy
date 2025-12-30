@@ -46,7 +46,7 @@ struct WorkoutView: View {
                     }
                     Spacer()
                 }
-                .padding(.top, 40)
+                .padding(.top, 80)
                 
                 // Stats Grid
                 HStack(spacing: 16) {
@@ -149,31 +149,46 @@ struct WorkoutView: View {
                 Spacer()
                 
                 // Stop Button
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    viewModel.stop()
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("STOP SESSION")
-                        .font(.headline.bold())
-                        .foregroundColor(.white.opacity(0.8))
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.red.opacity(0.5), lineWidth: 1)
-                        )
+                HStack(spacing: 16) {
+                    // Pause / Resume Button
+                    Button(action: {
+                        viewModel.togglePause()
+                    }) {
+                        Text(viewModel.isPaused ? "RESUME" : "PAUSE")
+                            .font(.headline.bold())
+                            .foregroundColor(.black)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(viewModel.isPaused ? YBColors.neonGreen : Color.yellow)
+                            .cornerRadius(20)
+                            .shadow(color: (viewModel.isPaused ? YBColors.neonGreen : Color.yellow).opacity(0.5), radius: 10)
+                    }
+                    
+                    // Quit Button
+                    Button(action: {
+                        viewModel.quitWorkout()
+                    }) {
+                        Text("QUIT")
+                            .font(.headline.bold())
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.red.opacity(0.8))
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                    }
                 }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 50)
             }
         }
         .navigationBarHidden(true)
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
-        .onChange(of: viewModel.workoutCompleted) { completed in
+        .onChange(of: viewModel.workoutCompleted) { _, completed in
             if completed {
                 presentationMode.wrappedValue.dismiss()
             }

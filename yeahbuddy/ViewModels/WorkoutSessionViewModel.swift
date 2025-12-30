@@ -25,6 +25,7 @@ class WorkoutSessionViewModel: ObservableObject {
     @Published var timeRemaining: Int = 0
     @Published var isWorkoutActive: Bool = false
     @Published var workoutCompleted: Bool = false
+    @Published var isPaused: Bool = false
     
     // Dependencies
     private let speechService = SpeechService()
@@ -52,6 +53,7 @@ class WorkoutSessionViewModel: ObservableObject {
         resetState()
         isWorkoutActive = true
         workoutCompleted = false
+        isPaused = false
         // Event-based audio
         speechService.playEvent(.start)
         
@@ -66,15 +68,50 @@ class WorkoutSessionViewModel: ObservableObject {
     }
     
     func stop() {
+        // This old stop method is effectively "Quit" but with saving. 
+        // We will repurpose logic for the new quitWorkout.
+        // Keeping this for backward compatibility if needed, but for now:
+        quitWorkout()
+    }
+    
+    func togglePause() {
+        if isPaused {
+            // RESUME
+            isPaused = false
+            
+            if isResting {
+                startRest(resume: true)
+            } else {
+                audioInputService.startMonitoring()
+            }
+            
+            // Interaction Sound
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            speechService.playEvent(.resume)
+            
+        } else {
+            // PAUSE
+            isPaused = true
+            stopTimer()
+            audioInputService.stopMonitoring()
+            
+            // Interaction Sound
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+    }
+    
+    func quitWorkout() {
         isWorkoutActive = false
+        isPaused = false
         stopTimer()
         audioInputService.stopMonitoring()
-        saveSession() // Save progress on stop
+        clearSession() // Ensure we don't resume this later
         
-        // Delay audio for smoother UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.speechService.playEvent(.stopByUser)
-        }
+        // Interaction Sound
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        
+        // Trigger dismissal
+        workoutCompleted = true
     }
     
     func completeRep() {

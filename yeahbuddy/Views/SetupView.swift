@@ -22,8 +22,10 @@ struct SetupView: View {
                 VStack(spacing: 30) {
                     // Header
                     VStack(spacing: 8) {
-                        Text("YEAH BUDDY")
-                            .ybTitle()
+                        Image("logo-white-2")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 90)
                         Text("Lightweight Baby!")
                             .font(.headline)
                             .foregroundColor(YBColors.textSecondary)
@@ -121,7 +123,7 @@ struct SetupView: View {
             .onAppear {
                 viewModel.checkForSavedSession()
             }
-            .onChange(of: viewModel.workoutCompleted) { completed in
+            .onChange(of: viewModel.workoutCompleted) { _, completed in
                 if completed {
                     navigateToWorkout = false
                 }
