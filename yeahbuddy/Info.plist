@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Yeah Buddy needs microphone access to count your reps while you train!</string>
+	<string>Microphone access is required to detect workout sounds and count repetitions.</string>
 </dict>
 </plist>
