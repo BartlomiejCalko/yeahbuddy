@@ -10,6 +10,7 @@ import SwiftUI
 struct SetupView: View {
     @StateObject private var viewModel = WorkoutSessionViewModel()
     @State private var navigateToWorkout = false
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = true
     
     var body: some View {
         NavigationStack {
@@ -26,6 +27,10 @@ struct SetupView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(height: 90)
+                            .onLongPressGesture(minimumDuration: 2) {
+                                hasCompletedOnboarding = false
+                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                            }
                         Text("Lightweight Baby!")
                             .font(.headline)
                             .foregroundColor(YBColors.textSecondary)

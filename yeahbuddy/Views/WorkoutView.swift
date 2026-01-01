@@ -132,11 +132,11 @@ struct WorkoutView: View {
                         }
                         
                         HStack {
-                            Text("Fine Tune")
+                            Text("Sensitivity")
                                 .font(.caption2)
                                 .foregroundColor(YBColors.textSecondary)
                             Spacer()
-                            Text(viewModel.audioInputService.sensitivityAdjustment == 0 ? "Default" : String(format: "%+.1f dB", viewModel.audioInputService.sensitivityAdjustment))
+                            Text(viewModel.audioInputService.sensitivityAdjustment == 0 ? "Default" : String(format: "%+.1f", viewModel.audioInputService.sensitivityAdjustment))
                                 .font(.caption.bold())
                                 .foregroundColor(YBColors.neonGreen)
                         }
