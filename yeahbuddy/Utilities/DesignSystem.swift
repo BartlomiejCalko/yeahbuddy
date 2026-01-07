@@ -31,7 +31,8 @@ struct YBGradients {
 struct GlassCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background(.thinMaterial) // Built-in glass material
+            .background(.thinMaterial)
+            .environment(\.colorScheme, .dark)
             .cornerRadius(24)
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
