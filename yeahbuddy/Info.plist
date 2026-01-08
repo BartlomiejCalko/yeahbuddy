@@ -3,6 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required to detect workout sounds and count repetitions.</string>
+	<string>The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
+The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
+The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
+</string>
 </dict>
 </plist>
