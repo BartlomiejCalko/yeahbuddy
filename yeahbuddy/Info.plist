@@ -3,9 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
-The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
-The microphone is used only when the user explicitly chooses to record voice input during a workout. Audio is processed locally on the device and is not stored or shared.
+	<string>The microphone is used during workouts to detect short exercise sounds (such as grunts or breathing) so the app can automatically count repetitions. Audio is processed in real time on the device and is not recorded, stored, or shared.
 </string>
 </dict>
 </plist>
