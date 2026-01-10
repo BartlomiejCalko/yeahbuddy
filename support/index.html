@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeah Buddy – App Support</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --text-color: #1C1C1E;
+            --secondary-text: #8E8E93;
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            font-size: 17px;
+            color: var(--secondary-text);
+            margin-bottom: 32px;
+        }
+
+        .contact-btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: #FFFFFF;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 17px;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .contact-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .contact-btn:active {
+            transform: translateY(0);
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Yeah Buddy</h1>
+            <p>We are here to help you get the most out of <strong>Reps & Sets</strong>. Whether you have a question,
+                found a bug, or want to suggest a feature, feel free to reach out.</p>
+
+            <a href="mailto:bartlomiej.calko1@wp.pl" class="contact-btn">Contact support via email</a>
+
+            <div class="footer">
+                We usually reply within 24–48 hours.
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2026 Bartłomiej Całko. All rights reserved.
+        </div>
+    </div>
+</body>
+
+</html>
